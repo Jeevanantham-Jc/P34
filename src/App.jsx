@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { DeliveryProvider, useDelivery } from './context/DeliveryContext';
+import { DeliveryAuthProvider, useDeliveryAuth } from './context/DeliveryAuthContext';
 
 // Delivery Components
 import DeliveryLogin from './pages/Delivery/DeliveryLogin';
@@ -12,35 +12,28 @@ import DeliveredOrders from './pages/Delivery/DeliveredOrders';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated } = useDelivery();
-  
-  if (!isAuthenticated) {
-    return <Navigate to="/delivery/login" replace />;
-  }
-  
+  const { partner, loading } = useDeliveryAuth();
+  if (loading) return null; // or a loading spinner
+  if (!partner) return <Navigate to="/delivery/login" replace />;
   return children;
 };
 
 // Public Route Component (redirect if already authenticated)
 const PublicRoute = ({ children }) => {
-  const { isAuthenticated } = useDelivery();
-  
-  if (isAuthenticated) {
-    return <Navigate to="/delivery/dashboard" replace />;
-  }
-  
+  const { partner, loading } = useDeliveryAuth();
+  if (loading) return null;
+  if (partner) return <Navigate to="/delivery/dashboard" replace />;
   return children;
 };
 
 function App() {
   return (
-    <DeliveryProvider>
+    <DeliveryAuthProvider>
       <Router>
         <div className="App">
           <Routes>
             {/* Default redirect */}
             <Route path="/" element={<Navigate to="/delivery/login" replace />} />
-            
             {/* Public Routes */}
             <Route path="/delivery/login" element={
               <PublicRoute>
@@ -52,7 +45,6 @@ function App() {
                 <DeliveryRegister />
               </PublicRoute>
             } />
-            
             {/* Protected Routes */}
             <Route path="/delivery/dashboard" element={
               <ProtectedRoute>
@@ -74,13 +66,12 @@ function App() {
                 <DeliveredOrders />
               </ProtectedRoute>
             } />
-            
             {/* Catch all route */}
             <Route path="*" element={<Navigate to="/delivery/login" replace />} />
           </Routes>
         </div>
       </Router>
-    </DeliveryProvider>
+    </DeliveryAuthProvider>
   );
 }
 

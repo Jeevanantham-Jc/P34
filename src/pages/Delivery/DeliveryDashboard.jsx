@@ -1,29 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RefreshCw, Package, LogOut, User, History } from 'lucide-react';
-import { useDelivery } from '../../context/DeliveryContext';
+import { useDeliveryAuth } from '../../context/DeliveryAuthContext';
 import { deliveryService } from '../../services/deliveryService';
 import OrderCard from '../../components/Delivery/OrderCard';
 
 const DeliveryDashboard = () => {
   const [orders, setOrders] = useState([]);
   const [isAccepting, setIsAccepting] = useState(false);
-  const { partner, logout, loading, setLoading, setError, acceptOrder } = useDelivery();
+  const { partner, logout, loading } = useDeliveryAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchAvailableOrders();
+    // eslint-disable-next-line
   }, []);
 
   const fetchAvailableOrders = async () => {
-    setLoading(true);
+    // Optionally set local loading state if needed
     try {
       const availableOrders = await deliveryService.getAvailableOrders();
       setOrders(availableOrders);
     } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+      // Optionally handle error
     }
   };
 
@@ -31,10 +30,10 @@ const DeliveryDashboard = () => {
     setIsAccepting(true);
     try {
       await deliveryService.acceptOrder(partner.id, order.orderId);
-      acceptOrder(order);
+      // Optionally update local state or navigate
       navigate(`/delivery/order/${order.orderId}`);
     } catch (err) {
-      setError(err.message);
+      // Optionally handle error
     } finally {
       setIsAccepting(false);
     }

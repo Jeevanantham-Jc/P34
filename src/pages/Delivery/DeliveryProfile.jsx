@@ -1,25 +1,38 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, User, Mail, Phone, Car, Star, Package } from 'lucide-react';
-import { useDelivery } from '../../context/DeliveryContext';
-import { deliveryService } from '../../services/deliveryService';
+import { useDeliveryAuth } from '../../context/DeliveryAuthContext';
+import { getDeliveryPartnerDetails, updateDeliveryPartnerDetails } from '../../services/deliveryPartnerApi';
 import ProfileForm from '../../components/Delivery/ProfileForm';
 
 const DeliveryProfile = () => {
   const navigate = useNavigate();
   const [isUpdating, setIsUpdating] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
-  const { partner, updateProfile, setError } = useDelivery();
+  const { partner, updateProfile } = useDeliveryAuth();
+  const [profile, setProfile] = useState(partner);
 
-  const handleUpdateProfile = async (profileData) => {
+  useEffect(() => {
+    // Fetch latest profile from backend on mount
+    getDeliveryPartnerDetails().then(data => {
+      setProfile(data.r);
+      updateProfile(data.r);
+      if (data.token) localStorage.setItem('token', data.token);
+    }).catch(() => {});
+    // eslint-disable-next-line
+  }, []);
+
+  const handleUpdateProfile = async (profileData, profilePic) => {
     setIsUpdating(true);
     try {
-      await deliveryService.updateProfile(partner.id, profileData);
-      updateProfile(profileData);
+      const data = await updateDeliveryPartnerDetails(profileData, profilePic);
+      setProfile(data.r);
+      updateProfile(data.r);
+      if (data.token) localStorage.setItem('token', data.token);
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000);
     } catch (err) {
-      setError(err.message);
+      // Optionally handle error
     } finally {
       setIsUpdating(false);
     }
@@ -58,17 +71,17 @@ const DeliveryProfile = () => {
             <div className="bg-white rounded-xl p-6 shadow-md">
               <div className="text-center">
                 <img
-                  src={partner?.profilePic || 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=150'}
+                  src={profile?.profilePic || 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=150'}
                   alt="Profile"
                   className="w-24 h-24 rounded-full object-cover mx-auto mb-4 border-4 border-blue-100"
                 />
                 <h2 className="text-xl font-semibold text-gray-800 mb-1">
-                  {partner?.name}
+                  {profile?.name}
                 </h2>
-                <p className="text-gray-600 mb-2">{partner?.email}</p>
+                <p className="text-gray-600 mb-2">{profile?.email}</p>
                 <div className="flex items-center justify-center text-sm text-gray-600">
                   <Car className="w-4 h-4 mr-1" />
-                  {partner?.vehicleType}
+                  {profile?.vehicleType}
                 </div>
               </div>
             </div>
@@ -108,7 +121,7 @@ const DeliveryProfile = () => {
                 Edit Profile Information
               </h3>
               <ProfileForm
-                partner={partner}
+                partner={profile}
                 onUpdate={handleUpdateProfile}
                 isUpdating={isUpdating}
               />

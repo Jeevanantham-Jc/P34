@@ -1,49 +1,30 @@
-const API_BASE_URL = 'https://api.fooddelivery.com'; // Replace with your actual API URL
+import axiosInstance from './axiosInstance';
 
 export const authService = {
-  async login(email, password) {
+  async login(username, password, userType) {
     try {
-      // Mock API call - replace with actual API
-      const response = await new Promise((resolve) => {
-        setTimeout(() => {
-          if (email === 'partner@gmail.com' && password === 'securepass') {
-            resolve({
-              token: 'mock_jwt_token_123',
-              partner: {
-                id: 'dp123',
-                name: 'Ravi Kumar',
-                email: 'partner@gmail.com',
-                phone: '9876543210',
-                vehicleType: 'Bike',
-                profilePic: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=150'
-              }
-            });
-          } else {
-            throw new Error('Invalid credentials');
-          }
-        }, 1000);
+      const response = await axiosInstance.post('/auth/login', {
+        username,
+        password,
+        userType
       });
-      
-      return response;
+      // response.data: { token: "..." }
+      return response.data;
     } catch (error) {
-      throw new Error(error.message || 'Login failed');
+      // If backend sends error as plain text
+      const errorMsg = error.response && error.response.data ? error.response.data : 'Login failed';
+      throw new Error(errorMsg);
     }
   },
 
-  async register(userData) {
+  async register(role, userData) {
     try {
-      // Mock API call - replace with actual API
-      const response = await new Promise((resolve) => {
-        setTimeout(() => {
-          resolve({
-            message: 'Registration successful'
-          });
-        }, 1000);
-      });
-      
-      return response;
+      const response = await axiosInstance.post(`/auth/register/${role}`, userData);
+      // Backend returns plain text "Registered" or error
+      return { message: response.data };
     } catch (error) {
-      throw new Error(error.message || 'Registration failed');
+      const errorMsg = error.response && error.response.data ? error.response.data : 'Registration failed';
+      throw new Error(errorMsg);
     }
   }
 };

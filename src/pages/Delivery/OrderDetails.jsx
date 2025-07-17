@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Phone, MapPin, Clock, CreditCard, MessageSquare } from 'lucide-react';
-import { useDelivery } from '../../context/DeliveryContext';
+import { useDeliveryAuth } from '../../context/DeliveryAuthContext';
 import { deliveryService } from '../../services/deliveryService';
 import DeliveryStatusButton from '../../components/Delivery/DeliveryStatusButton';
 import DeliveryMap from '../../components/Delivery/DeliveryMap';
@@ -12,21 +12,19 @@ const OrderDetails = () => {
   const navigate = useNavigate();
   const [orderDetails, setOrderDetails] = useState(null);
   const [isUpdating, setIsUpdating] = useState(false);
-  const { partner, currentOrder, updateOrderStatus, setLoading, setError } = useDelivery();
+  const { partner } = useDeliveryAuth();
 
   useEffect(() => {
     fetchOrderDetails();
+    // eslint-disable-next-line
   }, [orderId]);
 
   const fetchOrderDetails = async () => {
-    setLoading(true);
     try {
       const details = await deliveryService.getOrderDetails(orderId);
       setOrderDetails(details);
     } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+      // Optionally handle error
     }
   };
 
@@ -34,16 +32,14 @@ const OrderDetails = () => {
     setIsUpdating(true);
     try {
       await deliveryService.updateOrderStatus(partner.id, orderId, newStatus);
-      updateOrderStatus(newStatus);
       setOrderDetails(prev => ({ ...prev, status: newStatus }));
-      
       if (newStatus === 'DELIVERED') {
         setTimeout(() => {
           navigate('/delivery/dashboard');
         }, 2000);
       }
     } catch (err) {
-      setError(err.message);
+      // Optionally handle error
     } finally {
       setIsUpdating(false);
     }
@@ -127,65 +123,50 @@ const OrderDetails = () => {
               </div>
             </div>
 
-            {/* Order Items */}
-            <div className="bg-white rounded-xl p-6 shadow-md">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Order Items</h3>
-              <div className="space-y-3">
-                {orderDetails.items.map((item, index) => (
-                  <div key={index} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-0">
-                    <div>
-                      <p className="font-medium text-gray-800">{item.name}</p>
-                      <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
-                    </div>
-                    <p className="font-medium text-gray-800">₹{item.price}</p>
-                  </div>
-                ))}
-              </div>
-              
-              {orderDetails.specialInstructions && (
-                <div className="mt-4 p-3 bg-yellow-50 rounded-lg">
-                  <p className="text-sm text-yellow-800 flex items-start">
-                    <MessageSquare className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
-                    <span><strong>Special Instructions:</strong> {orderDetails.specialInstructions}</span>
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* Payment Details */}
-            <div className="bg-white rounded-xl p-6 shadow-md">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                <CreditCard className="w-5 h-5 text-emerald-500 mr-2" />
-                Payment Details
-              </h3>
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Payment Method:</span>
-                  <span className="font-medium">{orderDetails.paymentDetails.method}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Status:</span>
-                  <span className="font-medium text-emerald-600">{orderDetails.paymentDetails.paymentStatus}</span>
-                </div>
-                <div className="flex justify-between text-lg font-semibold border-t pt-3">
-                  <span>Total Amount:</span>
-                  <span className="text-emerald-600">₹{orderDetails.paymentDetails.amount}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Status Update */}
+            {/* Order Info */}
             <div className="bg-white rounded-xl p-6 shadow-md">
               <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
                 <Clock className="w-5 h-5 text-blue-500 mr-2" />
-                Update Delivery Status
+                Order Info
               </h3>
-              <DeliveryStatusButton
-                currentStatus={orderDetails.status}
-                onStatusUpdate={handleStatusUpdate}
-                isUpdating={isUpdating}
-              />
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-600">Order Time:</span>
+                  <span className="font-medium text-gray-800">{orderDetails.orderTime}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-600">Payment:</span>
+                  <span className="font-medium text-gray-800 flex items-center">
+                    <CreditCard className="w-4 h-4 mr-1" />
+                    {orderDetails.paymentStatus}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-600">Amount:</span>
+                  <span className="font-medium text-gray-800">₹{orderDetails.amount}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-600">Special Instructions:</span>
+                  <span className="font-medium text-gray-800">{orderDetails.instructions || 'None'}</span>
+                </div>
+              </div>
             </div>
+
+            {/* Status Button */}
+            <DeliveryStatusButton
+              status={orderDetails.status}
+              onUpdate={handleStatusUpdate}
+              isUpdating={isUpdating}
+            />
+
+            {/* Message Customer */}
+            <a
+              href={`sms:${orderDetails.customer.phone}`}
+              className="flex items-center justify-center bg-blue-50 text-blue-700 px-4 py-2 rounded-lg font-medium hover:bg-blue-100 transition-colors"
+            >
+              <MessageSquare className="w-5 h-5 mr-2" />
+              Message Customer
+            </a>
           </div>
 
           {/* Right Column - Map and Location */}
