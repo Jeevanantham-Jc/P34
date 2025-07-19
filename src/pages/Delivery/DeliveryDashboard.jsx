@@ -8,6 +8,7 @@ import OrderCard from '../../components/Delivery/OrderCard';
 const DeliveryDashboard = () => {
   const [orders, setOrders] = useState([]);
   const [isAccepting, setIsAccepting] = useState(false);
+  const [loadingNearby, setLoadingNearby] = useState(false);
   const { partner, logout, loading } = useDeliveryAuth();
   const navigate = useNavigate();
 
@@ -37,6 +38,17 @@ const DeliveryDashboard = () => {
     } finally {
       setIsAccepting(false);
     }
+  };
+
+  const handleFetchNearbyOrders = async () => {
+    setLoadingNearby(true);
+    try {
+      const orders = await deliveryService.getAvailableOrdersNearby();
+      setOrders(orders);
+    } catch (err) {
+      alert('Failed to fetch nearby orders: ' + err.message);
+    }
+    setLoadingNearby(false);
   };
 
   const handleLogout = () => {
@@ -94,12 +106,12 @@ const DeliveryDashboard = () => {
             Available Orders ({orders.length})
           </h2>
           <button
-            onClick={fetchAvailableOrders}
-            disabled={loading}
+            onClick={handleFetchNearbyOrders}
+            disabled={loadingNearby}
             className="flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50"
           >
-            <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
+            <RefreshCw className={`w-4 h-4 mr-2 ${loadingNearby ? 'animate-spin' : ''}`} />
+            {loadingNearby ? 'Fetching Nearby Orders...' : 'Get Nearby Orders'}
           </button>
         </div>
 

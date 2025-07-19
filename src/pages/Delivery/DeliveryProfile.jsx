@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, User, Mail, Phone, Car, Star, Package } from 'lucide-react';
+import { ArrowLeft, User, Mail, Phone, Car, Star, Package, Bike } from 'lucide-react';
 import { useDeliveryAuth } from '../../context/DeliveryAuthContext';
 import { getDeliveryPartnerDetails, updateDeliveryPartnerDetails } from '../../services/deliveryPartnerApi';
 import ProfileForm from '../../components/Delivery/ProfileForm';
@@ -80,8 +80,8 @@ const DeliveryProfile = () => {
                 </h2>
                 <p className="text-gray-600 mb-2">{profile?.email}</p>
                 <div className="flex items-center justify-center text-sm text-gray-600">
-                  <Car className="w-4 h-4 mr-1" />
-                  {profile?.vehicleType}
+                  <Bike className="w-4 h-4 mr-1" />
+                  bike
                 </div>
               </div>
             </div>

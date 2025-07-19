@@ -1,44 +1,29 @@
+import axiosInstance from './axiosInstance';
+
 const API_BASE_URL = 'https://api.fooddelivery.com'; // Replace with your actual API URL
 
 export const deliveryService = {
   async getAvailableOrders() {
-    try {
-      // Mock API call - replace with actual API
-      const response = await new Promise((resolve) => {
-        setTimeout(() => {
-          resolve([
-            {
-              orderId: 'ord567',
-              restaurantName: 'Biryani House',
-              restaurantAddress: 'Koramangala, Bangalore',
-              restaurantLocation: { lat: 12.9350, lng: 77.6100 },
-              customerAddress: 'HSR Layout, Bangalore',
-              customerLocation: { lat: 12.9100, lng: 77.5850 },
-              distance: '4.5 km',
-              paymentStatus: 'Paid',
-              estimatedTime: '25 mins',
-              amount: 360
-            },
-            {
-              orderId: 'ord568',
-              restaurantName: 'Pizza Corner',
-              restaurantAddress: 'Indiranagar, Bangalore',
-              restaurantLocation: { lat: 12.9716, lng: 77.6412 },
-              customerAddress: 'Whitefield, Bangalore',
-              customerLocation: { lat: 12.9698, lng: 77.7500 },
-              distance: '8.2 km',
-              paymentStatus: 'COD',
-              estimatedTime: '35 mins',
-              amount: 450
-            }
-          ]);
-        }, 1000);
-      });
-      
-      return response;
-    } catch (error) {
-      throw new Error(error.message || 'Failed to fetch orders');
-    }
+    // Use geolocation and call backend for real data
+    return await this.getAvailableOrdersNearby();
+  },
+
+  async getAvailableOrdersNearby() {
+    // Get current position using browser geolocation
+    const position = await new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error('Geolocation not supported'));
+      }
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude });
+        },
+        (err) => reject(err)
+      );
+    });
+    // Call backend with position
+    const response = await axiosInstance.post('/rider/getAvailableOrders', position);
+    return response.data;
   },
 
   async acceptOrder(partnerId, orderId) {

@@ -43,13 +43,13 @@ const DeliveryRegister = () => {
     const result = await register(userData);
     setLoading(false);
 
-    if (result && result.message === 'Registered') {
+    if (result === 'Registered') {
       setSuccess(true);
       setTimeout(() => {
         navigate('/delivery/login');
       }, 2000);
     } else {
-      setError(result.error || 'Registration failed');
+      setError(result && typeof result === 'string' ? result : 'Registration failed');
     }
   };
 
