@@ -20,14 +20,17 @@ const DeliveredOrderCard = ({ order }) => {
             {order.restaurantName}
           </h3>
           <p className="text-sm text-gray-600">
-            Order #{order.orderId}
+            Order #{order.id || order.orderId}
           </p>
           <p className="text-sm text-gray-600">
             Delivered to: {order.customerName}
           </p>
         </div>
         <div className="text-right">
-          <p className="text-xl font-bold text-emerald-600">₹{order.amount}</p>
+          <p className="text-xl font-bold text-emerald-600">
+            ₹{order.amount ? (order.amount * 0.10).toFixed(2) : '0.00'}
+          </p>
+          <p className="text-xs text-gray-500">Delivered Earning</p>
           <p className="text-sm text-gray-600 flex items-center justify-end">
             {order.paymentMethod === 'UPI' || order.paymentMethod === 'Card' ? (
               <CreditCard className="w-4 h-4 mr-1 text-emerald-500" />

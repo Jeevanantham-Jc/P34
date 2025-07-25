@@ -18,7 +18,6 @@ const DeliveryDashboard = () => {
   }, []);
 
   const fetchAvailableOrders = async () => {
-    // Optionally set local loading state if needed
     try {
       const availableOrders = await deliveryService.getAvailableOrders();
       setOrders(availableOrders);
@@ -30,11 +29,13 @@ const DeliveryDashboard = () => {
   const handleAcceptOrder = async (order) => {
     setIsAccepting(true);
     try {
-      await deliveryService.acceptOrder(partner.id, order.orderId);
-      // Optionally update local state or navigate
-      navigate(`/delivery/order/${order.orderId}`);
+      const result = await deliveryService.acceptOrder(order.id);
+      alert(result.message);
+      if (result.success) {
+        navigate(`/delivery/order/${order.id}`); // Redirect to order details page
+      }
     } catch (err) {
-      // Optionally handle error
+      alert('Failed to accept order. Please try again.');
     } finally {
       setIsAccepting(false);
     }
@@ -46,9 +47,10 @@ const DeliveryDashboard = () => {
       const orders = await deliveryService.getAvailableOrdersNearby();
       setOrders(orders);
     } catch (err) {
-      alert('Failed to fetch nearby orders: ' + err.message);
+      // Optionally handle error
+    } finally {
+      setLoadingNearby(false);
     }
-    setLoadingNearby(false);
   };
 
   const handleLogout = () => {
@@ -61,54 +63,64 @@ const DeliveryDashboard = () => {
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center">
-              <div className="bg-orange-600 w-10 h-10 rounded-full flex items-center justify-center mr-3">
-                <Package className="w-6 h-6 text-white" />
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-4 gap-4 sm:gap-0">
+            {/* Left: Avatar + Welcome */}
+            <div className="flex items-center gap-3">
+              <div className="bg-orange-600 w-12 h-12 rounded-full flex items-center justify-center text-white text-2xl font-bold uppercase shadow">
+                {partner?.profilePic ? (
+                  <img src={partner.profilePic} alt="Profile" className="w-12 h-12 rounded-full object-cover" />
+                ) : (
+                  (partner?.username?.[0] || partner?.name?.[0] || 'D')
+                )}
               </div>
               <div>
-                <h1 className="text-xl font-semibold text-gray-800">
-                  Welcome, {partner?.name}!
+                <h1 className="text-lg sm:text-xl font-bold text-gray-900">
+                  Welcome, <span className="uppercase">{partner?.username || partner?.name || 'Delivery Partner'}</span>!
                 </h1>
-                <p className="text-sm text-gray-600">
+                <p className="text-xs sm:text-sm text-gray-600">
                   Ready to deliver some amazing food?
                 </p>
               </div>
             </div>
-            <div className="flex items-center space-x-3">
+            {/* Right: Icon Buttons (desktop only) */}
+            <div className="hidden sm:flex gap-2 sm:gap-3 justify-end">
               <button
                 onClick={() => navigate('/delivery/profile')}
-                className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                className="p-2 rounded-full text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                aria-label="Profile"
               >
-                <User className="w-5 h-5" />
+                <User className="w-6 h-6" />
               </button>
               <button
                 onClick={() => navigate('/delivery/history')}
-                className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                className="p-2 rounded-full text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                aria-label="History"
               >
-                <History className="w-5 h-5" />
+                <History className="w-6 h-6" />
               </button>
               <button
                 onClick={handleLogout}
-                className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                className="p-2 rounded-full text-gray-600 hover:text-red-600 hover:bg-red-50 transition-colors"
+                aria-label="Logout"
               >
-                <LogOut className="w-5 h-5" />
+                <LogOut className="w-6 h-6" />
               </button>
             </div>
           </div>
+          <div className="border-t border-gray-100 mt-2" />
         </div>
       </div>
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 gap-3 sm:gap-0 text-center sm:text-left">
           <h2 className="text-2xl font-bold text-gray-800">
             Available Orders ({orders.length})
           </h2>
           <button
             onClick={handleFetchNearbyOrders}
             disabled={loadingNearby}
-            className="flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50"
+            className="flex items-center justify-center w-full sm:w-auto px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50 mt-2 sm:mt-0"
           >
             <RefreshCw className={`w-4 h-4 mr-2 ${loadingNearby ? 'animate-spin' : ''}`} />
             {loadingNearby ? 'Fetching Nearby Orders...' : 'Get Nearby Orders'}
@@ -139,7 +151,7 @@ const DeliveryDashboard = () => {
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {orders.map((order) => (
               <OrderCard
-                key={order.orderId}
+                key={order.id}
                 order={order}
                 onAccept={handleAcceptOrder}
                 isAccepting={isAccepting}
@@ -147,6 +159,34 @@ const DeliveryDashboard = () => {
             ))}
           </div>
         )}
+      </div>
+
+      {/* Bottom Navigation Bar for Mobile */}
+      <div className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 flex sm:hidden justify-around items-center py-2 z-50 shadow-lg">
+        <button
+          onClick={() => navigate('/delivery/profile')}
+          className="flex flex-col items-center text-gray-600 hover:text-blue-600 transition-colors"
+          aria-label="Profile"
+        >
+          <User className="w-6 h-6 mb-1" />
+          <span className="text-xs">Profile</span>
+        </button>
+        <button
+          onClick={() => navigate('/delivery/history')}
+          className="flex flex-col items-center text-gray-600 hover:text-blue-600 transition-colors"
+          aria-label="History"
+        >
+          <History className="w-6 h-6 mb-1" />
+          <span className="text-xs">History</span>
+        </button>
+        <button
+          onClick={handleLogout}
+          className="flex flex-col items-center text-gray-600 hover:text-red-600 transition-colors"
+          aria-label="Logout"
+        >
+          <LogOut className="w-6 h-6 mb-1" />
+          <span className="text-xs">Exit</span>
+        </button>
       </div>
     </div>
   );

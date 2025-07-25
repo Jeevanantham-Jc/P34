@@ -5,7 +5,7 @@ import { useDeliveryAuth } from '../../context/DeliveryAuthContext';
 import { deliveryService } from '../../services/deliveryService';
 import DeliveryStatusButton from '../../components/Delivery/DeliveryStatusButton';
 import DeliveryMap from '../../components/Delivery/DeliveryMap';
-import LocationSharing from './LocationSharing';
+import { useRiderLocation } from '../../context/RiderLocationContext';
 
 const OrderDetails = () => {
   const { orderId } = useParams();
@@ -13,6 +13,7 @@ const OrderDetails = () => {
   const [orderDetails, setOrderDetails] = useState(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const { partner } = useDeliveryAuth();
+  const riderLocation = useRiderLocation();
 
   useEffect(() => {
     fetchOrderDetails();
@@ -54,7 +55,7 @@ const OrderDetails = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 pb-20">
       {/* Header */}
       <div className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -77,7 +78,7 @@ const OrderDetails = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4">
         <div className="grid lg:grid-cols-2 gap-8">
           {/* Left Column - Order Details */}
           <div className="space-y-6">
@@ -88,6 +89,13 @@ const OrderDetails = () => {
                 Restaurant Details
               </h3>
               <div className="space-y-3">
+                {orderDetails.restaurant.img && (
+                  <img
+                    src={orderDetails.restaurant.img}
+                    alt={orderDetails.restaurant.name}
+                    className="w-full h-40 object-cover rounded-lg mb-2 border"
+                  />
+                )}
                 <div>
                   <p className="font-medium text-gray-800">{orderDetails.restaurant.name}</p>
                   <p className="text-sm text-gray-600">{orderDetails.restaurant.address}</p>
@@ -99,6 +107,29 @@ const OrderDetails = () => {
                   <Phone className="w-4 h-4 mr-2" />
                   {orderDetails.restaurant.phone}
                 </a>
+              </div>
+            </div>
+
+            {/* Dishes Details */}
+            <div className="bg-white rounded-xl p-6 shadow-md">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                Dishes
+              </h3>
+              <div className="grid gap-4 md:grid-cols-2">
+                {orderDetails.dishes.map((dish) => (
+                  <div key={dish.dishId} className="flex items-center space-x-4 bg-gray-50 rounded-lg p-3 border">
+                    <img
+                      src={dish.img}
+                      alt={dish.name}
+                      className="w-16 h-16 object-cover rounded-lg border"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-gray-800 truncate">{dish.name}</p>
+                      <p className="text-sm text-gray-600">Qty: {dish.quantity}</p>
+                      <p className="text-sm text-emerald-700 font-semibold">₹{dish.price}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -132,7 +163,12 @@ const OrderDetails = () => {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-gray-600">Order Time:</span>
-                  <span className="font-medium text-gray-800">{orderDetails.orderTime}</span>
+                  <span className="font-medium text-gray-800">{
+                    orderDetails.orderTime ?
+                      new Date(orderDetails.orderTime).toLocaleString('en-IN', {
+                        day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true
+                      }) : ''
+                  }</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-gray-600">Payment:</span>
@@ -140,6 +176,10 @@ const OrderDetails = () => {
                     <CreditCard className="w-4 h-4 mr-1" />
                     {orderDetails.paymentStatus}
                   </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-600">Payment Type:</span>
+                  <span className="font-medium text-gray-800">{orderDetails.paymentType?.toUpperCase()}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-gray-600">Amount:</span>
@@ -154,8 +194,8 @@ const OrderDetails = () => {
 
             {/* Status Button */}
             <DeliveryStatusButton
-              status={orderDetails.status}
-              onUpdate={handleStatusUpdate}
+              currentStatus={orderDetails.status}
+              onStatusUpdate={handleStatusUpdate}
               isUpdating={isUpdating}
             />
 
@@ -172,20 +212,45 @@ const OrderDetails = () => {
           {/* Right Column - Map and Location */}
           <div className="space-y-6">
             {/* Map */}
-            <div className="bg-white rounded-xl p-6 shadow-md">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                Delivery Route
-              </h3>
+            <div className="bg-white rounded-xl p-2 shadow-md">
               <DeliveryMap
                 restaurant={orderDetails.restaurant}
                 customer={orderDetails.customer}
+                currentLocation={riderLocation}
+                orderStatus={orderDetails.status}
               />
             </div>
-
-            {/* Location Sharing */}
-            <LocationSharing orderId={orderId} />
+            {/* Location Sharing removed */}
           </div>
         </div>
+      </div>
+      {/* Sticky Go to Restaurant/Customer Button */}
+      <div className="fixed bottom-0 left-0 w-full z-50 bg-white border-t border-gray-200 p-3 flex justify-center">
+        <button
+          className="w-full max-w-md bg-blue-600 text-white font-bold py-3 rounded-xl shadow-lg text-lg active:bg-blue-700 transition"
+          onClick={() => {
+            if (!riderLocation) {
+              alert('Current location not available.');
+              return;
+            }
+            let dest;
+            if (orderDetails.status === 'PICKED_UP' || orderDetails.status === 'ON_THE_WAY') {
+              dest = orderDetails.customer?.location;
+            } else {
+              dest = orderDetails.restaurant?.location;
+            }
+            if (!dest) {
+              alert('Destination location not available.');
+              return;
+            }
+            const { lat: originLat, lng: originLng } = riderLocation;
+            const { lat: destLat, lng: destLng } = dest;
+            const mapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${originLat},${originLng}&destination=${destLat},${destLng}&travelmode=driving`;
+            window.open(mapsUrl, '_blank');
+          }}
+        >
+          {orderDetails.status === 'PICKED_UP' || orderDetails.status === 'ON_THE_WAY' ? 'Go to Customer' : 'Go to Restaurant'}
+        </button>
       </div>
     </div>
   );

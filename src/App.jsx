@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { DeliveryAuthProvider, useDeliveryAuth } from './context/DeliveryAuthContext';
+import { RiderLocationProvider } from './context/RiderLocationContext';
 
 // Delivery Components
 import DeliveryLogin from './pages/Delivery/DeliveryLogin';
@@ -28,50 +29,52 @@ const PublicRoute = ({ children }) => {
 
 function App() {
   return (
-    <DeliveryAuthProvider>
-      <Router>
-        <div className="App">
-          <Routes>
-            {/* Default redirect */}
-            <Route path="/" element={<Navigate to="/delivery/login" replace />} />
-            {/* Public Routes */}
-            <Route path="/delivery/login" element={
-              <PublicRoute>
-                <DeliveryLogin />
-              </PublicRoute>
-            } />
-            <Route path="/delivery/register" element={
-              <PublicRoute>
-                <DeliveryRegister />
-              </PublicRoute>
-            } />
-            {/* Protected Routes */}
-            <Route path="/delivery/dashboard" element={
-              <ProtectedRoute>
-                <DeliveryDashboard />
-              </ProtectedRoute>
-            } />
-            <Route path="/delivery/order/:orderId" element={
-              <ProtectedRoute>
-                <OrderDetails />
-              </ProtectedRoute>
-            } />
-            <Route path="/delivery/profile" element={
-              <ProtectedRoute>
-                <DeliveryProfile />
-              </ProtectedRoute>
-            } />
-            <Route path="/delivery/history" element={
-              <ProtectedRoute>
-                <DeliveredOrders />
-              </ProtectedRoute>
-            } />
-            {/* Catch all route */}
-            <Route path="*" element={<Navigate to="/delivery/login" replace />} />
-          </Routes>
-        </div>
-      </Router>
-    </DeliveryAuthProvider>
+    <RiderLocationProvider>
+      <DeliveryAuthProvider>
+        <Router>
+          <div className="App">
+            <Routes>
+              {/* Default redirect */}
+              <Route path="/" element={<Navigate to="/delivery/login" replace />} />
+              {/* Public Routes */}
+              <Route path="/delivery/login" element={
+                <PublicRoute>
+                  <DeliveryLogin />
+                </PublicRoute>
+              } />
+              <Route path="/delivery/register" element={
+                <PublicRoute>
+                  <DeliveryRegister />
+                </PublicRoute>
+              } />
+              {/* Protected Routes */}
+              <Route path="/delivery/dashboard" element={
+                <ProtectedRoute>
+                  <DeliveryDashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/delivery/order/:orderId" element={
+                <ProtectedRoute>
+                  <OrderDetails />
+                </ProtectedRoute>
+              } />
+              <Route path="/delivery/profile" element={
+                <ProtectedRoute>
+                  <DeliveryProfile />
+                </ProtectedRoute>
+              } />
+              <Route path="/delivery/history" element={
+                <ProtectedRoute>
+                  <DeliveredOrders />
+                </ProtectedRoute>
+              } />
+              {/* Catch all route */}
+              <Route path="*" element={<Navigate to="/delivery/login" replace />} />
+            </Routes>
+          </div>
+        </Router>
+      </DeliveryAuthProvider>
+    </RiderLocationProvider>
   );
 }
 

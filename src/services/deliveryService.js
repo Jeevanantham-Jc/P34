@@ -9,7 +9,7 @@ export const deliveryService = {
   },
 
   async getAvailableOrdersNearby() {
-    // Get current position using browser geolocation
+    // For now, use hardcoded BTM location remove after testing
     const position = await new Promise((resolve, reject) => {
       if (!navigator.geolocation) {
         reject(new Error('Geolocation not supported'));
@@ -21,84 +21,44 @@ export const deliveryService = {
         (err) => reject(err)
       );
     });
-    // Call backend with position
     const response = await axiosInstance.post('/rider/getAvailableOrders', position);
     return response.data;
   },
 
-  async acceptOrder(partnerId, orderId) {
-    try {
-      // Mock API call - replace with actual API
-      const response = await new Promise((resolve) => {
-        setTimeout(() => {
-          resolve({
-            message: 'Order accepted',
-            status: 'ACCEPTED'
-          });
-        }, 500);
-      });
-      
-      return response;
-    } catch (error) {
-      throw new Error(error.message || 'Failed to accept order');
-    }
+  async acceptOrder(orderId) {
+    const response = await axiosInstance.put('/rider/acceptOrder', orderId, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    return response.data;
   },
 
   async getOrderDetails(orderId) {
-    try {
-      // Mock API call - replace with actual API
-      const response = await new Promise((resolve) => {
-        setTimeout(() => {
-          resolve({
-            orderId: 'ord567',
-            restaurant: {
-              name: 'Biryani House',
-              address: 'Koramangala, Bangalore',
-              location: { lat: 12.9350, lng: 77.6100 },
-              phone: '+91 9876543210'
-            },
-            customer: {
-              name: 'Balaji Narayanan',
-              address: 'HSR Layout, Bangalore',
-              location: { lat: 12.9100, lng: 77.5850 },
-              phone: '+91 9876543211'
-            },
-            items: [
-              { name: 'Chicken Biryani', quantity: 2, price: 280 },
-              { name: 'Paneer Tikka', quantity: 1, price: 80 }
-            ],
-            paymentDetails: {
-              method: 'UPI',
-              paymentStatus: 'Success',
-              amount: 360
-            },
-            status: 'ACCEPTED',
-            estimatedTime: '25 mins',
-            specialInstructions: 'Extra spicy, no onions'
-          });
-        }, 800);
-      });
-      
-      return response;
-    } catch (error) {
-      throw new Error(error.message || 'Failed to fetch order details');
-    }
+    const response = await axiosInstance.get(`/rider/acceptedOrderDetails/${orderId}`);
+    return response.data;
   },
 
   async updateOrderStatus(partnerId, orderId, newStatus) {
     try {
-      // Mock API call - replace with actual API
-      const response = await new Promise((resolve) => {
-        setTimeout(() => {
-          resolve({
-            message: `Order status updated to ${newStatus}`
-          });
-        }, 500);
-      });
-      
-      return response;
+      if (newStatus === 'ON_THE_WAY') {
+        // Call /rider/orderPickup endpoint
+        const response = await axiosInstance.put('/rider/orderPickup', orderId, {
+          headers: { 'Content-Type': 'application/json' }
+        });
+        return { message: 'Order status updated to ON_THE_WAY', ...response.data };
+      } else if (newStatus === 'DELIVERED') {
+        // Call /rider/orderDelivered endpoint
+        const response = await axiosInstance.put('/rider/orderDelivered', orderId, {
+          headers: { 'Content-Type': 'application/json' }
+        });
+        return { message: 'Order status updated to DELIVERED', ...response.data };
+      } else {
+        // Fallback or for other statuses, keep mock or extend as needed
+        return { message: `Order status updated to ${newStatus}` };
+      }
     } catch (error) {
-      throw new Error(error.message || 'Failed to update order status');
+      throw new Error(error.response?.data?.message || error.message || 'Failed to update order status');
     }
   },
 
@@ -135,6 +95,20 @@ export const deliveryService = {
       return response;
     } catch (error) {
       throw new Error(error.message || 'Failed to fetch order history');
+    }
+  },
+
+  async getDeliveredOrdersByDateRange(startDate, endDate) {
+    try {
+      const response = await axiosInstance.get('/rider/deliveredOrdersByRider', {
+        params: {
+          startDate,
+          endDate
+        }
+      });
+      return response.data;
+    } catch (error) {
+      throw new Error(error.response?.data?.message || error.message || 'Failed to fetch delivered orders');
     }
   },
 

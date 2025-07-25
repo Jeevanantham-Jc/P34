@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Navigation, MapPin, Play, Square } from 'lucide-react';
-import { useDelivery } from '../../context/DeliveryContext';
+import { useDeliveryAuth } from '../../context/DeliveryAuthContext';
 import { trackingService } from '../../services/trackingService';
 
 const LocationSharing = ({ orderId }) => {
   const [currentLocation, setCurrentLocation] = useState(null);
   const [watchId, setWatchId] = useState(null);
   const [locationError, setLocationError] = useState(null);
-  const { partner, isLocationSharing, startLocationSharing, stopLocationSharing } = useDelivery();
+  const { partner } = useDeliveryAuth();
+  const [isLocationSharing, setIsLocationSharing] = useState(false);
 
   useEffect(() => {
     return () => {
@@ -34,7 +35,7 @@ const LocationSharing = ({ orderId }) => {
     );
 
     setWatchId(id);
-    startLocationSharing();
+    setIsLocationSharing(true);
   };
 
   const handleStopTracking = () => {
@@ -42,7 +43,7 @@ const LocationSharing = ({ orderId }) => {
       trackingService.stopLocationTracking(watchId);
       setWatchId(null);
     }
-    stopLocationSharing();
+    setIsLocationSharing(false);
     setCurrentLocation(null);
   };
 
@@ -59,52 +60,31 @@ const LocationSharing = ({ orderId }) => {
         </div>
       )}
 
-      {currentLocation && (
-        <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg mb-4">
-          <div className="flex items-center mb-2">
-            <MapPin className="w-4 h-4 text-blue-600 mr-2" />
-            <span className="text-sm font-medium text-blue-800">Current Location</span>
-          </div>
-          <div className="text-xs text-blue-600 space-y-1">
-            <p>Latitude: {currentLocation.lat.toFixed(6)}</p>
-            <p>Longitude: {currentLocation.lng.toFixed(6)}</p>
-            <p className="text-green-600 flex items-center">
-              <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
-              Location sharing active
-            </p>
-          </div>
+      <div className="flex items-center space-x-4">
+        <button
+          onClick={handleStartTracking}
+          disabled={isLocationSharing}
+          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+        >
+          <Play className="w-4 h-4 mr-2" />
+          Start Sharing
+        </button>
+        <button
+          onClick={handleStopTracking}
+          disabled={!isLocationSharing}
+          className="flex items-center px-4 py-2 bg-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-400 transition-colors disabled:opacity-50"
+        >
+          <Square className="w-4 h-4 mr-2" />
+          Stop Sharing
+        </button>
+      </div>
+
+      {isLocationSharing && currentLocation && (
+        <div className="mt-4 text-sm text-gray-700">
+          <MapPin className="w-4 h-4 inline mr-1 text-blue-500" />
+          Sharing location: {currentLocation.lat.toFixed(5)}, {currentLocation.lng.toFixed(5)}
         </div>
       )}
-
-      <div className="space-y-3">
-        <p className="text-sm text-gray-600">
-          Share your live location with the customer to help them track your delivery progress.
-        </p>
-
-        {!isLocationSharing ? (
-          <button
-            onClick={handleStartTracking}
-            className="w-full flex items-center justify-center bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <Play className="w-4 h-4 mr-2" />
-            Start Location Sharing
-          </button>
-        ) : (
-          <button
-            onClick={handleStopTracking}
-            className="w-full flex items-center justify-center bg-red-600 text-white py-3 px-4 rounded-lg hover:bg-red-700 transition-colors"
-          >
-            <Square className="w-4 h-4 mr-2" />
-            Stop Location Sharing
-          </button>
-        )}
-
-        <div className="text-xs text-gray-500 space-y-1">
-          <p>• Location updates every 10 seconds when active</p>
-          <p>• Only shared during active deliveries</p>
-          <p>• Automatically stops when order is completed</p>
-        </div>
-      </div>
     </div>
   );
 };
